@@ -1,81 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fake Stock Market</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PSI Candlestick Market</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             background-color: #121212;
             color: #ffffff;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        canvas {
-            max-width: 600px;
-            margin: auto;
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            height: calc(100vh - 40px);
+        }
+        .header {
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .links {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .links a {
+            color: #ffcc00;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .links a:hover {
+            background-color: #242424;
+            text-decoration: underline;
+        }
+        #chart {
+            flex: 1;
+            min-height: 700px;
             background: #1e1e1e;
-            padding: 10px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
         }
-        #news {
-            margin-top: 20px;
-            font-size: 1.2em;
-            background: #222;
+        .news-container {
+            height: 150px;
+            background: #1a1a1a;
             padding: 10px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .news-header {
+            padding: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .news-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        #newsFeed {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .news-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 4px solid #ffcc00;
+            background: #242424;
+        }
+        .news-time {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .news-content {
+            color: #fff;
         }
     </style>
 </head>
 <body>
-    <h1 style="color: #ffcc00;">🚀 Fake Stock Market</h1>
-    <canvas id="stockChart"></canvas>
-    <p id="news"></p>
-    
+    <div class="container">
+        <div class="header">
+            <h1 style="color: #ffcc00; margin: 0;">PSI Candlestick Market</h1>
+        </div>
+        <div class="links">
+            <a href="https://github.com/Enigma-Capital" target="_blank">PSI - a company by Enigma</a>
+            <a href="https://github.com/Enigma-Capital/psi" target="_blank">Read about PSI</a>
+        </div>
+        <div id="chart"></div>
+        <div class="news-container">
+            <div class="news-header">
+                <h2 style="margin: 0;">Latest News</h2>
+            </div>
+            <div class="news-scroll">
+                <ul id="newsFeed"></ul>
+            </div>
+        </div>
+    </div>
     <script>
-        const apiUrl = 'https://your-backend-url.com/stocks'; // replace with actual backend
-        const ctx = document.getElementById('stockChart').getContext('2d');
-        let stockData = [];
-        
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Stock Price',
-                    data: [],
-                    borderColor: '#ffcc00',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.3
-                }]
+        // Previous script content remains the same until the updateCandle function
+        const apiUrl = 'http://127.0.0.1:8000/stocks';
+        let lastNews = "";
+        let currentCandle = null;
+        let candleData = {
+            x: [],
+            open: [],
+            high: [],
+            low: [],
+            close: []
+        };
+
+        let priceHistory = [];
+
+        const layout = {
+            dragmode: 'zoom',
+            margin: {
+                r: 10,
+                t: 25,
+                b: 40,
+                l: 60
             },
-            options: {
-                responsive: true,
-                scales: { x: { display: true, grid: { color: '#333' } }, y: { display: true, grid: { color: '#333' } } },
-                plugins: {
-                    legend: { labels: { color: '#ffffff' } }
-                }
-            }
+            showlegend: false,
+            xaxis: {
+                title: 'Time',
+                type: 'date',
+                tickformat: '%H:%M:%S',
+                color: '#fff',
+                rangeslider: { visible: false },
+                fixedrange: false,
+            },
+            yaxis: {
+                title: 'Price',
+                color: '#fff',
+                fixedrange: false,
+                autorange: false,
+            },
+            plot_bgcolor: '#1e1e1e',
+            paper_bgcolor: '#1e1e1e',
+            font: { color: '#fff' },
+            autosize: true
+        };
+
+        // Initialize plot with modified config
+        Plotly.newPlot('chart', [{
+            x: [],
+            open: [],
+            high: [],
+            low: [],
+            close: [],
+            type: 'candlestick',
+            xaxis: 'x',
+            yaxis: 'y'
+        }], layout, {
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d']
         });
-        
-        function updateChart() {
+
+        function processHistoricalData(prices) {
+            // Previous implementation remains the same
+            const CANDLE_PERIOD = 60000;
+            let currentTime = new Date();
+            currentTime.setMilliseconds(0);
+            currentTime.setSeconds(0);
+            
+            prices.forEach((price, index) => {
+                const time = new Date(currentTime - (prices.length - index) * 5000);
+                
+                if (!currentCandle || time - currentCandle.startTime >= CANDLE_PERIOD) {
+                    if (currentCandle) {
+                        candleData.x.push(currentCandle.startTime);
+                        candleData.open.push(currentCandle.open);
+                        candleData.high.push(currentCandle.high);
+                        candleData.low.push(currentCandle.low);
+                        candleData.close.push(currentCandle.close);
+                    }
+                    
+                    currentCandle = {
+                        startTime: new Date(time),
+                        open: price,
+                        high: price,
+                        low: price,
+                        close: price
+                    };
+                } else {
+                    currentCandle.high = Math.max(currentCandle.high, price);
+                    currentCandle.low = Math.min(currentCandle.low, price);
+                    currentCandle.close = price;
+                }
+            });
+        }
+
+        function updateCandle(price) {
+            const now = new Date();
+            
+            if (!currentCandle || now - currentCandle.startTime >= 60000) {
+                if (currentCandle) {
+                    candleData.x.push(currentCandle.startTime);
+                    candleData.open.push(currentCandle.open);
+                    candleData.high.push(currentCandle.high);
+                    candleData.low.push(currentCandle.low);
+                    candleData.close.push(currentCandle.close);
+                }
+                
+                currentCandle = {
+                    startTime: now,
+                    open: price,
+                    high: price,
+                    low: price,
+                    close: price
+                };
+            } else {
+                currentCandle.high = Math.max(currentCandle.high, price);
+                currentCandle.low = Math.min(currentCandle.low, price);
+                currentCandle.close = price;
+            }
+
+            const update = {
+                x: [candleData.x.concat([currentCandle.startTime])],
+                open: [candleData.open.concat([currentCandle.open])],
+                high: [candleData.high.concat([currentCandle.high])],
+                low: [candleData.low.concat([currentCandle.low])],
+                close: [candleData.close.concat([currentCandle.close])]
+            };
+
+            // Calculate price range with much wider zoom
+            const allPrices = [...candleData.high, ...candleData.low];
+            const minPrice = Math.min(...allPrices);
+            const maxPrice = Math.max(...allPrices);
+            const priceRange = maxPrice - minPrice;
+            
+            // Set very zoomed out range with 150% padding
+            const yRange = [
+                minPrice - priceRange * 1.5,
+                maxPrice + priceRange * 1.5
+            ];
+
+            Plotly.update('chart', update, {
+                'yaxis.range': yRange
+            });
+        }
+
+        // Rest of the code (news handling, etc.) remains the same
+        let newsQueue = [];
+        let isProcessingNews = false;
+
+        function processNewsQueue() {
+            if (isProcessingNews || newsQueue.length === 0) return;
+            
+            isProcessingNews = true;
+            const newsItem = newsQueue.shift();
+            
+            const newsFeed = document.getElementById('newsFeed');
+            const li = document.createElement('li');
+            li.className = 'news-item';
+            
+            li.innerHTML = `
+                <div class="news-time">${new Date().toLocaleTimeString()}</div>
+                <div class="news-content">${newsItem}</div>
+            `;
+            
+            newsFeed.insertBefore(li, newsFeed.firstChild);
+            
+            if (newsFeed.children.length > 10) {
+                newsFeed.removeChild(newsFeed.lastChild);
+            }
+            
+            setTimeout(() => {
+                isProcessingNews = false;
+                processNewsQueue();
+            }, 3000);
+        }
+
+        function addNews(news) {
+            if (news && news !== lastNews) {
+                lastNews = news;
+                newsQueue.push(news);
+                processNewsQueue();
+            }
+        }
+
+        function fetchStockData() {
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    stockData = data.prices;
-                    chart.data.labels = stockData.map((_, i) => i);
-                    chart.data.datasets[0].data = stockData;
-                    chart.update();
-                    document.getElementById('news').innerText = data.news;
+                    if (priceHistory.length === 0) {
+                        priceHistory = [...data.prices];
+                        processHistoricalData(priceHistory);
+                    } else {
+                        const latestPrice = data.prices[data.prices.length - 1];
+                        priceHistory.push(latestPrice);
+                    }
+                    
+                    updateCandle(priceHistory[priceHistory.length - 1]);
+                    addNews(data.news);
                 })
                 .catch(err => console.error('Error fetching stock data:', err));
         }
-        
-        setInterval(updateChart, 5000);
+
+        window.addEventListener('resize', () => {
+            Plotly.Plots.resize('chart');
+        });
+
+        setInterval(fetchStockData, 5000);
+        fetchStockData();
     </script>
 </body>
 </html>

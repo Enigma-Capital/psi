@@ -27,9 +27,10 @@ Critics called it financial snake oil. Investors called it a goldmine.
 ### The Conspiracy
 Today, PSI operates in the shadows of global finance. Theories surrounding its true nature include:
 
-PSI is an AI: Some claim the original founders lost control, and now the Sybil Engine runs autonomously, trading and evolving without human oversight.
-PSI is a psy-op: A few believe PSI was a government experiment in algorithmic market influence, designed to test the boundaries of financial control.
-PSI never existed: Others argue PSI was always a myth—a narrative created by traders to justify unexplained market movements.
+- ##### PSI is an AI: Some claim the original founders lost control, and now the Sybil Engine runs autonomously, trading and evolving without human oversight.
+- ##### PSI is a psy-op: A few believe PSI was a government experiment in algorithmic market influence, designed to test the boundaries of financial control.
+- ##### PSI never existed: Others argue PSI was always a myth—a narrative created by traders to justify unexplained market movements.
+
 Whatever the truth is, PSI remains one of the most enigmatic entities in financial history. Some say if you analyze market anomalies deeply enough, you’ll find PSI’s fingerprints in the data.
 
 But, of course, this is all completely fake. PSI Corp never existed. Or did it? 👀
