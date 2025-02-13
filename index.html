@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Stock Market</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        canvas {
+            max-width: 600px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+        #news {
+            margin-top: 20px;
+            font-size: 1.2em;
+            background: #222;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #ffcc00;">🚀 Fake Stock Market</h1>
+    <canvas id="stockChart"></canvas>
+    <p id="news"></p>
+    
+    <script>
+        const apiUrl = 'https://your-backend-url.com/stocks'; // replace with actual backend
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        let stockData = [];
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Stock Price',
+                    data: [],
+                    borderColor: '#ffcc00',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { x: { display: true, grid: { color: '#333' } }, y: { display: true, grid: { color: '#333' } } },
+                plugins: {
+                    legend: { labels: { color: '#ffffff' } }
+                }
+            }
+        });
+        
+        function updateChart() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    stockData = data.prices;
+                    chart.data.labels = stockData.map((_, i) => i);
+                    chart.data.datasets[0].data = stockData;
+                    chart.update();
+                    document.getElementById('news').innerText = data.news;
+                })
+                .catch(err => console.error('Error fetching stock data:', err));
+        }
+        
+        setInterval(updateChart, 5000);
+    </script>
+</body>
+</html>
